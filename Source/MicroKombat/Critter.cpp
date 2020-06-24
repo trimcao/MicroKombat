@@ -24,7 +24,6 @@ ACritter::ACritter()
 
 	CurrentVelocity = FVector(0.f);
 	MaxSpeed = 100.f;
-
 }
 
 // Called when the game starts or when spawned
