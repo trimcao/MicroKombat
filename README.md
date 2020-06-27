@@ -4,3 +4,4 @@ A game about fighting monsters using micro skills. Made with Unreal Engine. With
 Assets Used (to be updated):
 - StarterContent
 - InfinityBladeAdversaries
+- SunTemple Map
