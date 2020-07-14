@@ -6,6 +6,15 @@
 #include "GameFramework/Character.h"
 #include "Main.generated.h"
 
+UENUM(BlueprintType)
+enum class EMovementStatus : uint8
+{
+	EMS_Normal UMETA(DisplayName = "Normal"),
+	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class MICROKOMBAT_API AMain : public ACharacter
 {
@@ -14,6 +23,26 @@ class MICROKOMBAT_API AMain : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AMain();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EMovementStatus MovementStatus;
+
+	/** Set movement status and running speed */
+	void SetMovementStatus(EMovementStatus Status);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Running")
+	float RunningSpeed;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sprinting")
+	float SprintingSpeed;
+
+	bool bShiftKeyDown;
+
+	/** Press down to enable sprinting */
+	void ShiftKeyDown();
+
+	/** Release to stop sprinting */
+	void ShiftKeyUp();
 
 	/** Camera boom positioning the camera behind the player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta=(AllowPrivateAccess = "true"))
@@ -45,6 +74,11 @@ public:
 	float Stamina;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
+
+
+	void DecrementHealth(float Amount);
+	void IncrementCoins(int32 Amount);
+	void Die();
 
 protected:
 	// Called when the game starts or when spawned
