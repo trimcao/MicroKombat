@@ -9,6 +9,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Weapon.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
 
 // Sets default values
 AMain::AMain()
@@ -187,7 +189,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AMain::MoveForward(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) ) {
+	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) ) {
 		// Find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -199,7 +201,7 @@ void AMain::MoveForward(float Value)
 
 void AMain::MoveRight(float Value)
 {
-	if ((Controller != nullptr) && (Value != 0.0f)) {
+	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) ) {
 		// Find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -232,6 +234,10 @@ void AMain::LMBDown()
 			Weapon->Equip(this);
 			SetActiveOverlappingItem(nullptr);
 		}
+	}
+	else if (EquippedWeapon)
+	{
+		Attack();
 	}
 }
 
@@ -288,5 +294,40 @@ void AMain::ShowPickupLocations()
 	for (FVector Location: PickupLocations)
 	{
 		UKismetSystemLibrary::DrawDebugSphere(this, Location, 25.f, 12, FLinearColor::Green, 10.f, 0.25f);
+	}
+}
+
+void AMain::Attack()
+{
+	if (bAttacking) return;
+	bAttacking = true;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && CombatMontage)
+	{
+		int32 Section = FMath::RandRange(0, 1);
+		switch (Section)
+		{
+		case 0:
+			AnimInstance->Montage_Play(CombatMontage, 2.f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+			break;
+		case 1:
+			AnimInstance->Montage_Play(CombatMontage, 1.75f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+			break;
+		default:
+			break;
+		}
+		
+	}
+}
+
+void AMain::AttackEnd()
+{
+	bAttacking = false;
+	if (bLMBDown)
+	{
+		Attack();
 	}
 }
