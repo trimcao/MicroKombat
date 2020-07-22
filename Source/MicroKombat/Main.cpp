@@ -74,7 +74,7 @@ void AMain::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0.f, 0.f, 150.f), 25.f, 12, FLinearColor::Green, 5.f, 0.25f);
+	// UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0.f, 0.f, 150.f), 25.f, 12, FLinearColor::Green, 5.f, 0.25f);
 	
 }
 
