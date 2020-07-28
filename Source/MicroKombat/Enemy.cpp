@@ -53,7 +53,11 @@ void AEnemy::BeginPlay()
 	CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapBegin);
 	CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapEnd);
 
+	CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
@@ -110,8 +114,8 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		if (Main)
 		{
 			CombatTarget = Main;
-			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
 			bOverlappingCombatSphere = true;
+			Attack();
 		}
 	}
 }
@@ -161,17 +165,21 @@ void AEnemy::MoveToTarget(AMain* Target)
 }
 
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
+{	
+	UE_LOG(LogTemp, Warning, TEXT("CombatOnOverlapBegin"));
 	if (OtherActor)
 	{
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("inside Main"));
 			if (Main->HitParticles)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("inside Main->HitParticles"));
 				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName("TipSocket");
 				if (TipSocket)
 				{
+					UE_LOG(LogTemp, Warning, TEXT("inside TipSocket"));
 					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
@@ -187,12 +195,17 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 
 void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-
+	
 }
 
 void AEnemy::ActivateCollision()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Activate Collision"));
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	if (SwingSound)
+	{
+		UGameplayStatics::PlaySound2D(this, SwingSound);
+	}
 }
 
 void AEnemy::DeactivateCollision()
@@ -202,10 +215,28 @@ void AEnemy::DeactivateCollision()
 
 void AEnemy::Attack()
 {
-
+	if (AIController)
+	{
+		AIController->StopMovement();
+		SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
+	}
+	if (!bAttacking)
+	{
+		bAttacking = true;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Play(CombatMontage, 1.35f);
+			AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+		}
+	}
 }
 
 void AEnemy::AttackEnd()
 {
 	bAttacking = false;
+	if (bOverlappingCombatSphere)
+	{
+		Attack();
+	}
 }
