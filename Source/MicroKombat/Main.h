@@ -60,6 +60,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinSprintStamina;
 
+	float InterpSpeed;
+	bool bInterpToEnemy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	class AEnemy* CombatTarget;
+
+	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
 
 	/** Set movement status and running speed */
 	void SetMovementStatus(EMovementStatus Status);
@@ -108,7 +115,6 @@ public:
 	float Stamina;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
-
 
 	void DecrementHealth(float Amount);
 	void IncrementCoins(int32 Amount);
@@ -170,4 +176,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
+
+	void SetInterpToEnemy(bool Interp);
+
+	FRotator GetLookAtRotationYaw(FVector Target);
 };

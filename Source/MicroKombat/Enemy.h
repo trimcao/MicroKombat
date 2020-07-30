@@ -25,7 +25,7 @@ public:
 	// Sets default values for this character's properties
 	AEnemy();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Movement")
 	EEnemyMovementStatus MovementStatus;
 
 	FORCEINLINE void SetEnemyMovementStatus(EEnemyMovementStatus Status) { MovementStatus = Status; }
@@ -71,6 +71,14 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	bool bAttacking;
+
+	FTimerHandle AttackTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackMinTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AttackMaxTime;
 
 protected:
 	// Called when the game starts or when spawned

@@ -13,6 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Animation/AnimInstance.h"
+#include "TimerManager.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -38,6 +39,9 @@ AEnemy::AEnemy()
 	Damage = 10.f;
 
 	bAttacking = false;
+
+	AttackMinTime = 0.5f;
+	AttackMaxTime = 3.f;
 }
 
 // Called when the game starts or when spawned
@@ -113,6 +117,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
 		{
+			Main->SetCombatTarget(this);
 			CombatTarget = Main;
 			bOverlappingCombatSphere = true;
 			Attack();
@@ -127,6 +132,9 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
 		{
+			GetWorldTimerManager().ClearTimer(AttackTimer);
+
+			Main->SetCombatTarget(nullptr);
 			bOverlappingCombatSphere = false;
 			if (MovementStatus != EEnemyMovementStatus::EMS_Attacking)
 			{
@@ -237,6 +245,7 @@ void AEnemy::AttackEnd()
 	bAttacking = false;
 	if (bOverlappingCombatSphere)
 	{
-		Attack();
+		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
 }
