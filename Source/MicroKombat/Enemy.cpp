@@ -14,6 +14,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
+#include "Components/CapsuleComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -42,6 +43,8 @@ AEnemy::AEnemy()
 
 	AttackMinTime = 0.5f;
 	AttackMaxTime = 3.f;
+
+	DeathDelay = 3.f;
 }
 
 // Called when the game starts or when spawned
@@ -83,7 +86,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AEnemy::AgroSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor)
+	if (OtherActor && Alive())
 	{
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
@@ -112,7 +115,7 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 
 void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherActor)
+	if (OtherActor && Alive())
 	{
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
@@ -134,7 +137,10 @@ void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, 
 		{
 			GetWorldTimerManager().ClearTimer(AttackTimer);
 
-			Main->SetCombatTarget(nullptr);
+			if (Main->CombatTarget == this)
+			{
+				Main->SetCombatTarget(nullptr);
+			}
 			bOverlappingCombatSphere = false;
 			if (MovementStatus != EEnemyMovementStatus::EMS_Attacking)
 			{
@@ -196,6 +202,11 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
 				{
 					UGameplayStatics::PlaySound2D(this, Main->HitSound);
 				}
+
+				if (DamageTypeClass)
+				{
+					UGameplayStatics::ApplyDamage(Main, Damage, AIController, this, DamageTypeClass);
+				}
 			}
 		}
 	}
@@ -222,20 +233,23 @@ void AEnemy::DeactivateCollision()
 }
 
 void AEnemy::Attack()
-{
-	if (AIController)
+{	
+	if (Alive())
 	{
-		AIController->StopMovement();
-		SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
-	}
-	if (!bAttacking)
-	{
-		bAttacking = true;
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance)
+		if (AIController)
 		{
-			AnimInstance->Montage_Play(CombatMontage, 1.35f);
-			AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+			AIController->StopMovement();
+			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
+		}
+		if (!bAttacking)
+		{
+			bAttacking = true;
+			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+			if (AnimInstance)
+			{
+				AnimInstance->Montage_Play(CombatMontage, 1.35f);
+				AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+			}
 		}
 	}
 }
@@ -248,4 +262,49 @@ void AEnemy::AttackEnd()
 		float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
 		GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 	}
+}
+
+float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+	Health -= DamageAmount;
+	if (Health <= 0.f)
+	{
+		Die();
+	}
+	return DamageAmount;
+}
+
+void AEnemy::Die()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Play(CombatMontage, 1.f);
+		AnimInstance->Montage_JumpToSection(FName("Death"), CombatMontage);
+	}
+
+	SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Dead);
+
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AgroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CombatSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::DeathEnd()
+{
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+
+	GetWorldTimerManager().SetTimer(DeathTimer, this, &AEnemy::Disappear, DeathDelay);
+}
+
+bool AEnemy::Alive()
+{
+	return GetEnemyMovementStatus() != EEnemyMovementStatus::EMS_Dead;
+}
+
+void AEnemy::Disappear()
+{
+	Destroy();
 }

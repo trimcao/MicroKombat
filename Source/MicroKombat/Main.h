@@ -116,10 +116,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
 
-	void DecrementHealth(float Amount);
-	void IncrementCoins(int32 Amount);
-	void Die();
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -180,4 +176,11 @@ public:
 	void SetInterpToEnemy(bool Interp);
 
 	FRotator GetLookAtRotationYaw(FVector Target);
+
+	void DecrementHealth(float Amount);
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
+	void IncrementCoins(int32 Amount);
+	void Die();
 };

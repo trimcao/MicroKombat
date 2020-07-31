@@ -49,6 +49,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Item | Combat")
 	float Damage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item | Combat")
+	AController* WeaponInstigator;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -73,5 +79,7 @@ public:
 	void ActivateCollision();
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
+
+	FORCEINLINE void SetInstigator(AController* In) { WeaponInstigator = In; }
 
 };
