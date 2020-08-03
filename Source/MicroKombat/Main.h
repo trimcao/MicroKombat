@@ -126,6 +126,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	int32 Coins;
 
+	bool bMovingForward;
+	bool bMovingRight;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
