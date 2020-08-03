@@ -46,6 +46,8 @@ AEnemy::AEnemy()
 	AttackMaxTime = 3.f;
 
 	DeathDelay = 3.f;
+
+	bHasValidTarget = false;
 }
 
 // Called when the game starts or when spawned
@@ -65,7 +67,6 @@ void AEnemy::BeginPlay()
 	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
 
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
@@ -104,6 +105,7 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
 		{	
+			bHasValidTarget = true;
 			if (Main->CombatTarget == this)
 			{
 				Main->SetCombatTarget(nullptr);
@@ -132,6 +134,7 @@ void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 		{
 			Main->SetCombatTarget(this);
 			Main->SetHasCombatTarget(true);
+			bHasValidTarget = true;
 			if (Main->MainPlayerController)
 			{
 				Main->MainPlayerController->DisplayEnemyHealthBar();
@@ -167,7 +170,7 @@ void AEnemy::MoveToTarget(AMain* Target)
 
 	if (AIController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MoveToTarget()"));
+		//UE_LOG(LogTemp, Warning, TEXT("MoveToTarget()"));
 
 		FAIMoveRequest MoveRequest;
 		MoveRequest.SetGoalActor(Target);
@@ -190,20 +193,20 @@ void AEnemy::MoveToTarget(AMain* Target)
 
 void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {	
-	UE_LOG(LogTemp, Warning, TEXT("CombatOnOverlapBegin"));
+	//UE_LOG(LogTemp, Warning, TEXT("CombatOnOverlapBegin"));
 	if (OtherActor)
 	{
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("inside Main"));
+			//UE_LOG(LogTemp, Warning, TEXT("inside Main"));
 			if (Main->HitParticles)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("inside Main->HitParticles"));
+				//UE_LOG(LogTemp, Warning, TEXT("inside Main->HitParticles"));
 				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName("TipSocket");
 				if (TipSocket)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("inside TipSocket"));
+					//UE_LOG(LogTemp, Warning, TEXT("inside TipSocket"));
 					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
 					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->HitParticles, SocketLocation, FRotator(0.f), false);
 				}
@@ -229,7 +232,7 @@ void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor
 
 void AEnemy::ActivateCollision()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Activate Collision"));
+	//UE_LOG(LogTemp, Warning, TEXT("Activate Collision"));
 	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	if (SwingSound)
 	{
@@ -244,7 +247,7 @@ void AEnemy::DeactivateCollision()
 
 void AEnemy::Attack()
 {	
-	if (Alive())
+	if (Alive() && bHasValidTarget)
 	{
 		if (AIController)
 		{

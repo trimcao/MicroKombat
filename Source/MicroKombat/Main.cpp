@@ -95,6 +95,8 @@ void AMain::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsDead()) return;
+
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 
 	switch (StaminaStatus)
@@ -203,7 +205,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 	check(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMain::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
@@ -225,7 +227,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AMain::MoveForward(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) ) {
+	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && (!IsDead()) ) {
 		// Find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -237,7 +239,7 @@ void AMain::MoveForward(float Value)
 
 void AMain::MoveRight(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) ) {
+	if ( (Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && (!IsDead()) ) {
 		// Find out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -262,6 +264,8 @@ void AMain::LMBDown()
 {
 	bLMBDown = true;
 
+	if (IsDead()) return;
+
 	if (ActiveOverlappingItem)
 	{
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
@@ -284,12 +288,7 @@ void AMain::LMBUp()
 
 void AMain::DecrementHealth(float Amount)
 {	
-	Health -= Amount;
-
-	if (Health <= 0.f)
-	{
-		AMain::Die();
-	}
+	
 }
 
 void AMain::IncrementCoins(int32 Amount)
@@ -300,11 +299,28 @@ void AMain::IncrementCoins(int32 Amount)
 
 void AMain::Die()
 {
+	if (IsDead()) return;
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && CombatMontage)
 	{
 		AnimInstance->Montage_Play(CombatMontage, 1.f);
 		AnimInstance->Montage_JumpToSection(FName("Death"));
+	}
+	SetMovementStatus(EMovementStatus::EMS_Dead);
+}
+
+void AMain::DeathEnd()
+{
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+}
+
+void AMain::Jump()
+{
+	if (!IsDead())
+	{
+		Super::Jump();
 	}
 }
 
@@ -341,6 +357,9 @@ void AMain::ShowPickupLocations()
 void AMain::Attack()
 {
 	if (bAttacking) return;
+
+	if (IsDead()) return;
+	
 	bAttacking = true;
 	SetInterpToEnemy(true);
 
@@ -389,6 +408,20 @@ void AMain::SetInterpToEnemy(bool Interp)
 
 float AMain::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	DecrementHealth(DamageAmount);
+	Health -= DamageAmount;
+
+	if (Health <= 0.f)
+	{
+		AMain::Die();
+		if (DamageCauser)
+		{
+			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
+			if (Enemy)
+			{
+				Enemy->bHasValidTarget = false;
+			}
+		}
+	}
+
 	return DamageAmount;
 }
