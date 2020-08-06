@@ -129,6 +129,9 @@ public:
 	bool bMovingForward;
 	bool bMovingRight;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<AEnemy> EnemyFilter;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -205,4 +208,6 @@ public:
 	virtual void Jump() override;
 
 	FORCEINLINE bool IsDead() { return MovementStatus == EMovementStatus::EMS_Dead; }
+
+	void UpdateCombatTarget();
 };
