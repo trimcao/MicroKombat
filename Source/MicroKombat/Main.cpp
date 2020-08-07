@@ -317,6 +317,15 @@ void AMain::IncrementCoins(int32 Amount)
 	Coins += Amount;
 }
 
+void AMain::IncrementHealth(float Amount)
+{
+	Health += Amount;
+	if (Health >= MaxHealth)
+	{
+		Health = MaxHealth;
+	}
+}
+
 
 void AMain::Die()
 {
