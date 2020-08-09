@@ -214,4 +214,6 @@ public:
 	FORCEINLINE bool IsDead() { return MovementStatus == EMovementStatus::EMS_Dead; }
 
 	void UpdateCombatTarget();
+
+	void SwitchLevel(FName LevelName);
 };
