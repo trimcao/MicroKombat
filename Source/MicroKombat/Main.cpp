@@ -16,6 +16,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
+#include "MicroKombatSaveGame.h"
 
 // Sets default values
 AMain::AMain()
@@ -510,4 +511,39 @@ void AMain::SwitchLevel(FName LevelName)
 			UGameplayStatics::OpenLevel(World, LevelName);
 		}
 	}
+}
+
+void AMain::SaveGame()
+{
+	UMicroKombatSaveGame* SaveGameInstance = Cast<UMicroKombatSaveGame>(UGameplayStatics::CreateSaveGameObject(UMicroKombatSaveGame::StaticClass()));
+	
+	SaveGameInstance->CharacterStats.Health = Health;
+	SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+	SaveGameInstance->CharacterStats.Stamina = Stamina;
+	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+	SaveGameInstance->CharacterStats.Coins = Coins;
+
+	SaveGameInstance->CharacterStats.Location = GetActorLocation();
+	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex);
+}
+
+void AMain::LoadGame(bool SetLocation)
+{
+	UMicroKombatSaveGame* LoadGameInstance = Cast<UMicroKombatSaveGame>(UGameplayStatics::CreateSaveGameObject(UMicroKombatSaveGame::StaticClass()));
+
+	LoadGameInstance = Cast<UMicroKombatSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+
+	Health = LoadGameInstance->CharacterStats.Health;
+	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+	Stamina = LoadGameInstance->CharacterStats.Stamina;
+	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+
+	if (SetLocation)
+	{
+		SetActorLocation(LoadGameInstance->CharacterStats.Location);
+		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+	}
+	
 }
