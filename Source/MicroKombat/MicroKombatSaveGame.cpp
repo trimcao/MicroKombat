@@ -8,5 +8,7 @@ UMicroKombatSaveGame::UMicroKombatSaveGame()
 	PlayerName = TEXT("DefaultName");
 
 	UserIndex = 0;
+
+	CharacterStats.WeaponName = TEXT("");
 }
 
