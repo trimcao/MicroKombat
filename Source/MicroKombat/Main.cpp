@@ -93,6 +93,12 @@ void AMain::BeginPlay()
 	// UKismetSystemLibrary::DrawDebugSphere(this, GetActorLocation() + FVector(0.f, 0.f, 150.f), 25.f, 12, FLinearColor::Green, 5.f, 0.25f);
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
+
+	LoadGameNoSwitch();
+	if (MainPlayerController)
+	{
+		MainPlayerController->GameModeOnly();
+	}
 	
 }
 
@@ -582,6 +588,12 @@ void AMain::SaveGame()
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
+	FString MapName = GetWorld()->GetMapName();
+	MapName.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
+	UE_LOG(LogTemp, Warning, TEXT("Map Name: %s"), *MapName);
+
+	SaveGameInstance->CharacterStats.LevelName = MapName;
+
 	if (EquippedWeapon)
 	{
 		SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
@@ -629,5 +641,43 @@ void AMain::LoadGame(bool SetLocation)
 
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
+
+	if (LoadGameInstance->CharacterStats.LevelName != TEXT(""))
+	{
+		FName LevelName = *LoadGameInstance->CharacterStats.LevelName;
+		SwitchLevel(LevelName);
+	}
 	
+}
+
+void AMain::LoadGameNoSwitch()
+{
+	UMicroKombatSaveGame* LoadGameInstance = Cast<UMicroKombatSaveGame>(UGameplayStatics::CreateSaveGameObject(UMicroKombatSaveGame::StaticClass()));
+
+	LoadGameInstance = Cast<UMicroKombatSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+
+	Health = LoadGameInstance->CharacterStats.Health;
+	MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+	Stamina = LoadGameInstance->CharacterStats.Stamina;
+	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+
+	if (WeaponStorage)
+	{
+		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+		if (Weapons)
+		{
+			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+
+			if (Weapons->WeaponMap.Contains(WeaponName))
+			{
+				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
+				WeaponToEquip->Equip(this);
+			}
+		}
+	}
+
+	SetMovementStatus(EMovementStatus::EMS_Normal);
+
+	GetMesh()->bPauseAnims = false;
+	GetMesh()->bNoSkeletonUpdate = false;
 }
