@@ -75,5 +75,5 @@ Plugins/*/Intermediate/*
 DerivedDataCache/*
 
 # Assets
-Content/InfinityBlade*
-Content/Paragon*
+#Content/InfinityBlade*
+#Content/Paragon*
